@@ -16,6 +16,15 @@
 
 </div>
 
+<!-- START_AUTOMATED_STATS -->
+> 🔄 **Live Auto-Updated Status**  
+> 📅 **Last Synced**: `August 1, 2026 at 11:47 AM GMT+5:30`  
+> 🎬 **Movies Catalog**: `12 Active Titles`  
+> 🏙️ **Locations Supported**: `20 Cities across India`  
+> 🎟️ **Available Showtimes**: `23,000+ Automated Real-Time Shows`  
+> ⚡ **Redis Seat Lock TTL**: `300 Seconds (5 Minutes)`
+<!-- END_AUTOMATED_STATS -->
+
 ---
 
 ## 🌟 Key Highlights
