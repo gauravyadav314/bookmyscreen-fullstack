@@ -38,14 +38,20 @@ app.use(express.json());
 // ALL ROUTES
 app.use("/api/v1/", router);
 
+// Serve Frontend React Static Files in Production
+const frontendDistPath = path.resolve(__dirname, "../../bms-frontend/dist");
+app.use(express.static(frontendDistPath));
+
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(frontendDistPath, "index.html"), (err) => {
+    if (err) {
+      res.json({ message: "Welcome to BookMyScreen API" });
+    }
+  });
+});
 
 // Global error handler (MUST be after all routes)
 app.use(globalErrorHandler);
-
-app.get("/", (_, res) => {
-  res.json({
-    message: "Welcome to BookMyScreen API",
-  });
-});
 
 export default app;

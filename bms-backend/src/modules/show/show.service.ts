@@ -137,7 +137,7 @@ export const updateSeatStatus = async (
   showId: mongoose.Types.ObjectId,
   seats: string[],
   status: "AVAILABLE" | "BOOKED" | "BLOCKED",
-  session: ClientSession
+  session: ClientSession | null
 ) => {
   
   const show = await ShowModel.findById(showId).session(session);
@@ -184,7 +184,7 @@ export const updateSeatStatus = async (
 
   show.markModified("seatLayout"); // Inform Mongoose that seatLayout has been modified
 
-  await show.save({ session }); // Save the updated show document within the transaction session
+  await show.save(session ? { session } : {}); // Save the updated show document
 
 }
 

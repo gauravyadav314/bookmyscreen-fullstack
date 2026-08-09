@@ -79,8 +79,9 @@ export const seedShow = async () => {
   console.log("✅ Show seeding completed for all movies and theatres.");
 };
 
-mongoose
-  .connect((config.databaseReplicaSet || config.databaseUrl) as string)
+import connectDB from "../config/db";
+
+connectDB()
   .then(async () => {
     console.log("DB connected");
     await ShowModel.deleteMany({});

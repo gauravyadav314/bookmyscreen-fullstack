@@ -5,7 +5,7 @@ import Mailgen from "mailgen";
 
 // generate otp
 export const generateOTP = () => {
-  const otp = crypto.randomInt(1000, 9999);
+  const otp = crypto.randomInt(1000, 10000);
   return otp;
 };
 
@@ -88,7 +88,7 @@ export const sendOTPtoEmail = async (email: string, otp: number) => {
                             link: '#'
                         }
                     },
-                    outro: 'This OTP will expire in 2 minutes for security reasons.'
+                    outro: 'This OTP will expire in 5 minutes for security reasons.'
                 }
             };
             const mail = mailGenerator.generate(emailTemp);

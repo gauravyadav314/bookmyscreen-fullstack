@@ -3,14 +3,17 @@ import { config } from "./config";
 
 const connectDB = async () => {
     try {
-        const uri = config.databaseReplicaSet || config.databaseUrl;
+        const standaloneUri = (config.databaseUrl || "mongodb://127.0.0.1:27017/bookmyscreen").replace(/[\?&]replicaSet=[^&]*/, '');
         try {
-            await mongoose.connect(uri);
+            await mongoose.connect(standaloneUri, { serverSelectionTimeoutMS: 3000 });
             console.log("Connected to database");
-        } catch (replicaErr) {
-            console.warn("⚠️ Replica set connection failed, trying standard MongoDB connection...");
-            await mongoose.connect(config.databaseUrl);
-            console.log("Connected to database (standalone mode)");
+        } catch (stdErr) {
+            if (config.databaseReplicaSet) {
+                await mongoose.connect(config.databaseReplicaSet, { serverSelectionTimeoutMS: 3000 });
+                console.log("Connected to database (replica set mode)");
+            } else {
+                throw stdErr;
+            }
         }
     } catch (error) {
         console.log("Failed to connect to database", error);

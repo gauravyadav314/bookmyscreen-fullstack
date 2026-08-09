@@ -34,7 +34,7 @@ function loadScript(src) {
 const Checkout = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, toggleModal } = useAuth();
   const { location } = useLocation();
   const { selectedSeats, shows: showData } = useSeatContext();
 
@@ -107,7 +107,7 @@ const Checkout = () => {
 
   const bookTicketMutation = useMutation({
     mutationFn: (reqData) => bookShow(reqData),
-    onSuccess: (data) => {
+    onSuccess: (res) => {
       toast.success("Booking Confirmed!");
       queryClient.invalidateQueries(["bookings"]);
       socket.emit("unlock-seats", {
@@ -116,8 +116,9 @@ const Checkout = () => {
         seatIds: selectedSeats,
       });
 
+      const returnedBooking = res?.data?.booking || res?.data;
       const ticketDetails = {
-        bookingId: "BMS" + Math.floor(100000 + Math.random() * 900000),
+        bookingId: returnedBooking?.bookingRef || ("BMS" + Math.floor(100000 + Math.random() * 900000)),
         movieTitle: showData.movie.title,
         posterUrl: showData.movie.posterUrl,
         theaterName: showData.theater.name,
@@ -131,23 +132,21 @@ const Checkout = () => {
       setConfirmedTicket(ticketDetails);
     },
     onError: (err) => {
-      // Fallback ticket generation for smooth experience
-      const ticketDetails = {
-        bookingId: "BMS" + Math.floor(100000 + Math.random() * 900000),
-        movieTitle: showData.movie.title,
-        posterUrl: showData.movie.posterUrl,
-        theaterName: showData.theater.name,
-        date: showData.date,
-        time: showData.startTime,
-        seats: selectedSeats.join(", "),
-        amountPaid: grandTotal,
-        paymentMethod: "Demo Payment Success",
-      };
-      setConfirmedTicket(ticketDetails);
+      const errorMsg = err?.response?.data?.message || err?.message || "Booking failed! Please check your connection.";
+      toast.error(errorMsg);
+      if (err?.response?.status === 401 && toggleModal) {
+        toggleModal();
+      }
     },
   });
 
   const handleProceedPayment = async () => {
+    if (!user) {
+      toast.error("Please log in to complete your booking!");
+      if (toggleModal) toggleModal();
+      return;
+    }
+
     if (paymentMethod === "RAZORPAY") {
       try {
         const res = await loadScript(razorPayScript);

@@ -83,10 +83,9 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
     console.log(isValid);
     let user;
     try {
-        user = await UserService.getUserByEmail(email);
+        user = await UserService.getUserByEmail(normalizedEmail);
         if(!user){
-            console.log("inside")
-            user = await UserService.createUser({email});
+            user = await UserService.createUser({email: normalizedEmail});
         }
     } catch (error) {
         return next(error);

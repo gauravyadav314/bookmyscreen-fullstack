@@ -1,12 +1,10 @@
-import mongoose from "mongoose";
+import connectDB from "../config/db";
 import dotenv from "dotenv";
 import { TheaterModel } from "../modules/theater/theater.model";
-import { config } from "../config/config";
 
 dotenv.config();
 
-mongoose
-  .connect(config.databaseReplicaSet as string)
+connectDB()
   .then(async () => {
     console.log("Connected to MongoDB ✅");
 

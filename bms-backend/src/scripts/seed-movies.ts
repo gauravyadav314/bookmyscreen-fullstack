@@ -218,9 +218,11 @@ const movies = [
   },
 ];
 
+import connectDB from "../config/db";
+
 const seedMovies = async () => {
   try {
-    await mongoose.connect((config.databaseReplicaSet || config.databaseUrl) as string);
+    await connectDB();
     console.log("Connected to DB");
 
     await MovieModel.deleteMany();

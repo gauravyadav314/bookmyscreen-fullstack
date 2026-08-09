@@ -21,12 +21,28 @@ export const createBooking = async (bookingData: IBooking, userId: string) => {
     // 🔹 3. Generate unique booking reference
     const bookingRef = generateBookingReference();
 
-    // 🔹 4. Start Transaction // Protects against race condition
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // 🔹 4. Start Transaction if supported (Replica Set mode)
+    let session: mongoose.ClientSession | null = null;
+    let useTransaction = false;
+
+    const topologyType = (mongoose.connection as any)?.topology?.description?.type;
+    const isReplicaSet = topologyType && topologyType !== "Single" && topologyType !== "Unknown";
+
+    if (isReplicaSet) {
+        try {
+            session = await mongoose.startSession();
+            session.startTransaction();
+            useTransaction = true;
+        } catch (sessionErr) {
+            if (session) {
+                try { (session as mongoose.ClientSession).endSession(); } catch (e) {}
+            }
+            session = null;
+            useTransaction = false;
+        }
+    }
 
     try {
-
         // 🔹 5. Critical Query (Check if ANY of the requested seats are already booked)
         const existingBooking = await BookingModel.findOne({
                 showId, status : "CONFIRMED", seats: { $in: seats }
@@ -59,32 +75,42 @@ export const createBooking = async (bookingData: IBooking, userId: string) => {
         }
 
         // 🔹 7. Create Booking
-        const [booking] = await BookingModel.create([
-            {
-                bookingRef,
-                userId,
-                showId,
-                seats,
-                status: "CONFIRMED",
-                paymentId,
-                paymentMethod: paymentMethodUsed,
-                bookingFee,
-             }
-         ], {session});
+        const bookingPayload = {
+            bookingRef,
+            userId,
+            showId,
+            seats,
+            status: "CONFIRMED",
+            paymentId,
+            paymentMethod: paymentMethodUsed,
+            bookingFee,
+        };
+
+        let booking;
+        if (useTransaction && session) {
+            const [created] = await BookingModel.create([bookingPayload], { session });
+            booking = created;
+        } else {
+            booking = await BookingModel.create(bookingPayload);
+        }
 
          // 🔹 8. Update Seat Availability in Show Document
-         await updateSeatStatus(showId, seats, "BOOKED", session);
+         await updateSeatStatus(showId, seats, "BOOKED", session as any);
 
-         // 🔹 9. Commit Transaction
-        await session.commitTransaction();
-        session.endSession();
+         // 🔹 9. Commit Transaction if active
+        if (useTransaction && session) {
+            await session.commitTransaction();
+            session.endSession();
+        }
 
         return booking;
         
 
-    }catch (error) {
-        await session.abortTransaction();
-        session.endSession();
+    } catch (error) {
+        if (useTransaction && session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
         throw error;
     }
 
